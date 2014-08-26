@@ -8,6 +8,7 @@
 
 #import "CCViewController.h"
 #import "SVProgressHUD.h"
+#import "AFDownloadRequestOperation.h"
 
 @interface CCViewController ()
 
@@ -15,10 +16,97 @@
 
 @implementation CCViewController
 
+- (AFHTTPRequestOperation *)downloadFileWithURL:(NSString *)url
+                                    destination:(NSString*)destinationPath
+{
+    NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:url]];
+    AFDownloadRequestOperation *operation = [[AFDownloadRequestOperation alloc]initWithRequest:request targetPath:destinationPath shouldResume:YES];
+    [operation setProgressiveDownloadProgressBlock:^(AFDownloadRequestOperation *operation, NSInteger bytesRead, long long totalBytesRead, long long totalBytesExpected, long long totalBytesReadForFile, long long totalBytesExpectedToReadForFile) {
+        float percentDone = (float)totalBytesReadForFile/(float)totalBytesExpectedToReadForFile;
+        NSString *percentDoneString =  [NSString stringWithFormat:@"PERCENT:%.2f%%",percentDone*100];
+        NSString *current = [NSString stringWithFormat:@"CURRENT:%.2fMB",(float)totalBytesRead/(1024*1024)];
+        NSString *total = [NSString stringWithFormat:@"TOTAL:%.2fMB",(float)totalBytesExpectedToReadForFile/(1024*1024)];
+        HYLog(@"%@,%@,%@",total,current,percentDoneString);
+    }];
+    [operation setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, id responseObject){
+        NSLog(@"Successfully downloaded file to %@", destinationPath);
+    } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
+        NSLog(@"Error: %@", error);
+    }];
+    /*
+    AFHTTPRequestOperation *operation = [[AFHTTPRequestOperation alloc] initWithRequest:request];
+    operation.outputStream = [NSOutputStream outputStreamToFileAtPath:destinationPath append:NO];
+    [operation setDownloadProgressBlock:^(NSUInteger bytesRead, long long totalBytesRead, long long totalBytesExpectedToRead)
+     {
+         float percentDone = (float)totalBytesRead/(float)totalBytesExpectedToRead;
+         NSString *percentDoneString =  [NSString stringWithFormat:@"PERCENT:%.2f%%",percentDone*100];
+         NSString *current = [NSString stringWithFormat:@"CURRENT:%.2fMB",(float)totalBytesRead/(1024*1024)];
+         NSString *total = [NSString stringWithFormat:@"TOTAL:%.2fMB",(float)totalBytesExpectedToRead/(1024*1024)];
+         HYLog(@"%@,%@,%@",total,current,percentDoneString);
+     }];
+    [operation setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, id responseObject){
+        NSLog(@"Successfully downloaded file to %@", destinationPath);
+    } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
+        NSLog(@"Error: %@", error);
+    }];
+     */
+    return operation;
+}
+
 - (void)viewDidLoad
 {
     [super viewDidLoad];
-	// Do any additional setup after loading the view, typically from a nib.
+    NSString *urlString = @"http://source.fullteem.com/mp4/xpg.mp4";
+    NSString *destinationPath = [PATH_OF_DOCUMENT stringByAppendingPathComponent:[urlString lastPathComponent]];
+    AFHTTPRequestOperation *op = [self downloadFileWithURL:urlString destination:destinationPath];
+    [[AFHTTPRequestOperationManager manager].operationQueue addOperation:op];
+    
+    /*
+    NSURL *someLocalURL = [NSURL URLWithString:destinationPath];
+    AFHTTPRequestOperationManager *manager = [AFHTTPRequestOperationManager manager];
+    manager.responseSerializer = [AFHTTPResponseSerializer serializer];
+    AFHTTPRequestOperation *operation = [manager GET:urlString
+                                          parameters:nil
+                                             success:^(AFHTTPRequestOperation *operation, NSData *responseData){
+                                                 [responseData writeToFile:path atomically:YES];
+//                                                 [responseData writeToURL:someLocalURL atomically:YES];
+                                             }
+                                             failure:^(AFHTTPRequestOperation *operation, NSError *error)
+                                         {
+                                             NSLog(@"Downloading error: %@", error);
+                                         }];
+    
+    [operation setDownloadProgressBlock:^(NSUInteger bytesRead, long long totalBytesRead, long long totalBytesExpectedToRead)
+     {
+         float percentDone = (float)totalBytesRead/(float)totalBytesExpectedToRead;
+         NSString *percentDoneString =  [NSString stringWithFormat:@"PERCENT:%.2f%%",percentDone*100];
+         NSString *current = [NSString stringWithFormat:@"CURRENT:%.2fMB",(float)totalBytesRead/(1024*1024)];
+         NSString *total = [NSString stringWithFormat:@"TOTAL:%.2fMB",(float)totalBytesExpectedToRead/(1024*1024)];
+         HYLog(@"%@,%@,%@",total,current,percentDoneString);
+     }];
+    */
+    
+    /*
+    NSString *url = @"http://source.fullteem.com/mp4/xpg.mp4";
+    NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:url]];
+    AFHTTPRequestOperation *operation = [[AFHTTPRequestOperation alloc] initWithRequest:request];
+    NSString *path = [PATH_OF_DOCUMENT stringByAppendingPathComponent:[url lastPathComponent]];
+    operation.outputStream = [NSOutputStream outputStreamToFileAtPath:path append:NO];
+    [operation setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, id responseObject){
+        NSLog(@"Successfully downloaded file to %@", path);
+
+    } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
+        NSLog(@"Error: %@", error);
+    }];
+    [operation setDownloadProgressBlock:^(NSUInteger bytesRead, long long totalBytesRead, long long totalBytesExpectedToRead) {
+        float percentDone = totalBytesRead/(float)totalBytesExpectedToRead;
+        NSString *percentDoneString =  [NSString stringWithFormat:@"PERCENT:%.2f%%",percentDone*100];
+        NSString *current = [NSString stringWithFormat:@"CURRENT:%.2fMB",(CGFloat)totalBytesRead/(1024*1024)];
+        NSString *total = [NSString stringWithFormat:@"TOTAL:%.2fMB",(CGFloat)totalBytesExpectedToRead/(1024*1024)];
+        HYLog(@"%@,%@,%@",total,current,percentDoneString);
+    }];
+    [operation start];
+     */
 }
 
 - (IBAction)upload:(id)sender
